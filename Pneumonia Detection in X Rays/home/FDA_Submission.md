@@ -10,9 +10,9 @@
 
 **Intended Use Statement: This algorithm is used to aid Radiologists in detecting pneumonia in a chest x-ray.** 
 
-**Indications for Use: To improve turnaround time for diagnosing patients, a Radiologist will send the dicom file to the algorithm and will be presented with the algorithms prediction of pneumonia or no pneumonia. The model is to be used on chest x-rays with a modality of DX and a patient position of either AP or PA.**
+**Indications for Use: To improve turnaround time for diagnosing patients, a Radiologist will send the dicom file to the algorithm and will be presented with the algorithms prediction of pneumonia or no pneumonia. The model is to be used on chest x-rays with a modality of DX and a patient position of either AP or PA. Since the model was trained on data with the majority of patient ages ranging from thirty to sixty, the model should be used on patients in this range and may be less accurate outside of this range. The model can be used on patients of male or female gender. Note that this age range is based off of the EDA that shows a Pneumonia Patient Age Distribution with mean of 44 and std of 17.**
 
-**Device Limitations: This should not be used as a diagnostic device - it is ultimately up to the Radiologist to make the diagnosis. The model took an hour to train in the virtual GPU workspace provided, so the time cost of training should be considered when someone is deciding whether to re-train or not.**
+**Device Limitations: This should not be used as a diagnostic device - it is ultimately up to the Radiologist to make the diagnosis. The model should be limited to age ranges of thirty to sixty, but does not need to be limited to any comorbidities. The model took an hour to train in the virtual GPU workspace provided, so the time cost of training should be considered when someone is deciding whether to re-train or not.**
 
 **Clinical Impact of Performance: Improved turnaround time for diagnosing patients.**
 
@@ -49,23 +49,34 @@ Adam optimizer with lr=1e-4
 * Layers added to pre-existing architecture
 4
 
-<<Figure of training and validation losses - I would have to retrain my model to access this history. If I need to do so, please let me know.>>
+![Training Loss](loss.png)
+
+![Validation Loss](val_loss.png)
 
 ![AUC](auc.png)
+
 ![Model History of AUC](auc_history.png)
+
 ![Model History of Binary Accuracy](binary_accuracy_history.png)
 
 ![Precision-Recall Curve](precision_recall_curve.png)
 
+Regarding the tradeoff between precision and recall, recall is preferred in this context in order to reduce the amount of false negatives - we do not want the radiologist to diagnose a pneumonia patient as non-pneumonia!
+
+
 **Final Threshold and Explanation:**
+
 ![Threshold DataFrame](thresh_df.png)
-Using precision threshold of 0.6 yielded a precision of .75, a recall of .86, and an f1 score of .80. This will be used as my threshold since it has the highest f1 score of all the attempts as well as the highest recall.
+
+![Threshold-F1 Curve](threshold-f1.png)
+
+Using precision threshold of 0.6 yielded a precision of .5, a recall of .5, and an f1 score of .5. This will be used as my threshold since it has the highest f1 score of all the attempts as well as the highest recall.
 
 ### 4. Databases
 
 "Chest X-ray exams are one of the most frequent and cost-effective medical imaging examinations available. However, clinical diagnosis of a chest X-ray can be challenging and sometimes more difficult than diagnosis via chest CT imaging. The lack of large publicly available datasets with annotations means it is still very difficult, if not impossible, to achieve clinically relevant computer-aided detection and diagnosis (CAD) in real world medical sites with chest X-rays. One major hurdle in creating large X-ray image datasets is the lack resources for labeling so many images. Prior to the release of this dataset, Openi was the largest publicly available source of chest X-ray images with 4,143 images available." ![source](https://www.kaggle.com/nih-chest-xrays/data)
 
-For the training set, 1073 pneumonia patients and 1073 non-pneumonia patients. For the validation set, a ratio of positive to negative of 1:3 was used, resulting in 358 pneumonia patients and 1074 non-pneumonia patients. For the distributions of this data, please see the visualizations below.
+For the training set, 1073 pneumonia patients and 1073 non-pneumonia patients. For the validation set, a ratio of positive to negative of 1:3 was used, resulting in 358 pneumonia patients and 1074 non-pneumonia patients. The reason for the 1:3 ratio for the validation set is due to the fact that in a real clinical setting, the population of non-pneumonia patients will outweigh the pneumonia patients. For the distributions of this data, please see the visualizations below.
 
 **Description of Training Dataset:** 
 ![Patient Gender Distribution](train_patient_gender.png)
@@ -107,6 +118,8 @@ See Section 5 Ground Truth
 
 **Algorithm Performance Standard:**
 
-Ideally, the validation dataset from a clinical partner would be the DICOM files of x-rays with the findings (ground truth / gold standard) having been intentionally recorded by the radiologist rather than extracted via NLP. 
+Ideally, the validation dataset from a clinical partner would be the DICOM files of x-rays with the findings (ground truth / silver standard) having been intentionally recorded by the radiologist rather than extracted via NLP. These findings should be the result of multiple radiologists as well as biopsies, and the final label should be a weighted result of all radiologists findings to create a single label for each image. The validation dataset should be chest x-rays with a modality of DX and a patient position of either AP or PA.  The validation dataset should have patient ages ranging from thirty to sixty and may be male or female.
 
 From the ![CVR Paper here](http://openaccess.thecvf.com/content_cvpr_2017/papers/Wang_ChestX-ray8_Hospital-Scale_Chest_CVPR_2017_paper.pdf), we can see that the AUCs of ROC curves for multi-label classification had the following values for detecting Pneumonia: AlexNet:.5493, GoogLeNet: .5990, VGGNet-16: .5100, ResNet-50: .6333. Since our model was built off of the VGGNet, the model should be held to the same standard as the one from this paper. Since the model achieved an AUC of >.62, it should be considered as sufficient in this setting. However, one should note that our model was binary classification, and the models from the paper are multi-label classification.
+
+Additionally, ![this paper](https://arxiv.org/pdf/1711.05225.pdf) shows an average Radiologist F1 score of .387 and the paper's CheXNet F1 score of .435. Our model should be held to the standards of at least the average Radiologist F1 score, which our model surpasses with a value of .5.
