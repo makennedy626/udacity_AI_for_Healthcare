@@ -1,2 +1,7 @@
 *.hdf5
 *.zip
+*.pyc
+*.nii.gz
+*.pth
+*.tar
+*.dcm
